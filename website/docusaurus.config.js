@@ -6,9 +6,9 @@ var path = require('path');
 const lightCodeTheme = require('prism-react-renderer/themes/github');
 const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 const remarkCodeTerminal = require('./src/remark/code-terminal');
+const remarkTime = require('./src/remark/time');
 const remarkIncludeCode = require('./src/remark/include-code');
 const remarkIncludeKustomization = require('./src/remark/include-kustomization');
-const remarkBlueprintsAddon = require('./src/remark/blueprints-addon');
 const remarkParameters = require('./src/remark/parameters');
 
 require('dotenv').config({ path: '.kustomize-env' })
@@ -50,7 +50,7 @@ const config = {
       ({
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
-          remarkPlugins: [remarkCodeTerminal],
+          remarkPlugins: [remarkCodeTerminal, remarkTime],
           beforeDefaultRemarkPlugins: [
             [remarkParameters, {
               replacements: {
@@ -60,10 +60,9 @@ const config = {
                 KUBERNETES_VERSION: '1.25',
                 KUBERNETES_NODE_VERSION: '1.25.6-eks-48e63af'
               }
-            }],
+            }], 
             [remarkIncludeCode, { manifestsDir }],
             [remarkIncludeKustomization, { manifestsDir: kustomizationsDir }],
-            //[remarkBlueprintsAddon, {terraformDir: `${rootDir}/../terraform/local`}]
           ],
           editUrl:
             'https://github.com/aws-samples/eks-workshop-v2/tree/main/website',

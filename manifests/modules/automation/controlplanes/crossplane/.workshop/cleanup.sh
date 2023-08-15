@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 echo "Deleting resources created by Crossplane... (this will take several minutes)"
 
 delete-all-if-crd-exists relationaldatabases.awsblueprints.io

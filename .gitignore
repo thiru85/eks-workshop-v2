@@ -31,3 +31,7 @@ env
 *.zip
 
 cdk.out
+
+test-output
+
+.envrc

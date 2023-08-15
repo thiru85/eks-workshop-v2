@@ -1,5 +1,5 @@
 import { Category, Gatherer, Page, Script } from "./gatherer/gatherer.js";
-import Mocha, { Suite, Test } from 'mocha'
+import Mocha, { Runner, Suite, Test } from 'mocha'
 import path from 'path'
 import GlobToRegExp from 'glob-to-regexp'
 import { assert } from 'chai'
@@ -29,20 +29,24 @@ export class MarkdownSh {
       timeout: number, 
       hookTimeout: number, 
       bail: boolean,
-      junitReport: string,
+      output: string,
+      outputPath: string,
       beforeEach: string) {
     const mochaOpts : Mocha.MochaOptions = {
       timeout: timeout * 1000,
       bail
     };
 
-    if(junitReport !== '') {
-      mochaOpts.reporter = 'mocha-junit-reporter'
-      mochaOpts.reporterOptions = {
-        mochaFile: junitReport,
-        includePending: true,
-        testCaseSwitchClassnameAndName: true
-      }
+    mochaOpts.reporter = 'mocha-multi'
+    mochaOpts.reporterOptions = {
+      spec: '-',
+    }
+
+    if(output == 'xunit') {
+      mochaOpts.reporterOptions.xunit = outputPath;
+    }
+    else if(output == 'json') {
+      mochaOpts.reporterOptions.json = outputPath;
     }
 
     const mocha = new Mocha(mochaOpts);
@@ -137,15 +141,35 @@ export class MarkdownSh {
       let func = async (hookPath: string, hook: string, hookTimeout: number, dryRun: boolean) => {
         this.debugMessage(`Calling suite ${hook} hook at ${hookPath}`)
   
-        if(!dryRun) {
-          let response = await shell.exec(`bash ${hookPath} ${hook}`, hookTimeout, false)
+        try {
+          if(!dryRun) {
+            let response = await shell.exec(`bash ${hookPath} ${hook}`, hookTimeout, false)
 
-          this.debugMessage(response.output)
+            this.debugMessage(response.output)
+          }
+        
+          this.debugMessage(`Completed suite ${hook} hook`)
+        
+          return Promise.resolve();
         }
-      
-        this.debugMessage(`Completed suite ${hook} hook`)
-      
-        return Promise.resolve();
+        catch (e: any) {
+          if(e instanceof ShellTimeout) {
+            console.log(e.message)
+            console.log('Command timed out')
+            console.log(`stdout: \n${e.stdout}`)
+            console.log(`stderr: \n${e.stderr}`)
+            assert.fail(`Script failed to complete within ${e.timeout} seconds`)
+          }
+          else if(e instanceof ShellError) {
+            console.log(e.message)
+            console.log(`Command returned error code ${e.code}`)
+            console.log(`stdout: \n${e.stdout}`)
+            console.log(`stderr: \n${e.stderr}`)
+            assert.fail("Script exit with an error code");
+          }
+          
+          throw e;
+        }
       }
 
       suite.beforeAll('Suite Before Hook', async function() {
